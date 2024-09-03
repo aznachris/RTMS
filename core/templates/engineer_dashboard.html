@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Engineer Dashboard</title>
+</head>
+<body>
+    <h1>Engineer Dashboard</h1>
+    <h2>Assignments</h2>
+    <ul>
+        {% for assignment in assignments %}
+            <li>{{ assignment.project.name }} - {{ assignment.hours_worked }} hours</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Time Entries</h2>
+    <ul>
+        {% for entry in time_entries %}
+            <li>{{ entry.date }} - {{ entry.hours_worked }} hours - {{ entry.work_description }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

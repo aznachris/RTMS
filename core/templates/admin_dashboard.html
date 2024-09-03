@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+
+    <h2>Projects</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Budget</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+                <tr>
+                    <td>{{ project.name }}</td>
+                    <td>{{ project.description }}</td>
+                    <td>{{ project.start_date }}</td>
+                    <td>{{ project.end_date }}</td>
+                    <td>${{ project.budget }}</td>
+                    <td>{{ project.status }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Engineers</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Job Title</th>
+                <th>Availability</th>
+                <th>Hourly Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for engineer in engineers %}
+                <tr>
+                    <td>{{ engineer.name }}</td>
+                    <td>{{ engineer.email }}</td>
+                    <td>{{ engineer.job_title }}</td>
+                    <td>{{ engineer.availability_status }}</td>
+                    <td>${{ engineer.hourly_rate }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Assignments</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Engineer</th>
+                <th>Project</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Hours Worked</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for assignment in assignments %}
+                <tr>
+                    <td>{{ assignment.engineer.name }}</td>
+                    <td>{{ assignment.project.name }}</td>
+                    <td>{{ assignment.start_date }}</td>
+                    <td>{{ assignment.end_date }}</td>
+                    <td>{{ assignment.hours_worked }}</td>
+                    <td>{{ assignment.role_in_project }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Time Entries</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Engineer</th>
+                <th>Project</th>
+                <th>Date</th>
+                <th>Hours Worked</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in time_entries %}
+                <tr>
+                    <td>{{ entry.engineer.name }}</td>
+                    <td>{{ entry.project.name }}</td>
+                    <td>{{ entry.date }}</td>
+                    <td>{{ entry.hours_worked }}</td>
+                    <td>{{ entry.work_description }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
