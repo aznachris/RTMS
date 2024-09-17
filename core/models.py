@@ -9,14 +9,18 @@ class Engineer(models.Model):
         ('On Leave', 'On Leave'),
         ('On Project', 'On Project')
     ]
-    
+    EXPERIENCE_CHOICES = [
+        ('Junior', 'Junior'),
+        ('Mid', 'Mid'), 
+        ('Senior', 'Senior')
+    ]
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     job_title = models.CharField(max_length=100)
     skillset = models.TextField()  # List of skills as a comma-separated string
-    experience_level = models.CharField(max_length=50)  # e.g., Junior, Mid, Senior
+    experience_level = models.CharField(max_length=50, choices=EXPERIENCE_CHOICES)  # e.g., Junior, Mid, Senior
     certifications = models.TextField(blank=True, null=True)  # Optional
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
     availability_status = models.CharField(max_length=20, choices=AVAILABILITY_CHOICES, default='Available')
@@ -43,8 +47,7 @@ class Project(models.Model):
     budget = models.DecimalField(max_digits=15, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Planned')
     project_manager = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True)
-    client_name = models.CharField(max_length=100, blank=True, null=True)  # Optional
-
+    client_name = models.ForeignKey('Client', on_delete=models.SET_NULL, blank=True, null=True)#models.CharField(max_length=100, blank=True, null=True)  # Optional
     def total_cost(self):
         total_hours = sum([assignment.hours_worked for assignment in self.assignments.all()])
         return total_hours * self.engineers.first().hourly_rate  # Assuming a single engineer
