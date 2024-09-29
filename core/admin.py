@@ -1,52 +1,63 @@
 from django.contrib import admin
-from .models import Engineer, Project, Assignment, TimeEntry, UserProfile, Client, Report
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser, Group, Client, Project, Leave, TimeEntry
 
-# General Admin - Full Access
-class AdminModelAdmin(admin.ModelAdmin):
-    def get_queryset(self, request):
-        # Only admins can see everything
-        return super().get_queryset(request)
+# Custom UserAdmin for CustomUser model
+class CustomUserAdmin(UserAdmin):
+    model = CustomUser
+    list_display = ('name', 'email', 'phone_number', 'experience_level', 'hourly_rate', 'linkedin_profile')
+    search_fields = ('name', 'email', 'phone_number')
+    list_filter = ('experience_level',)
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal Info', {'fields': ('name', 'email', 'phone_number', 'address', 'linkedin_profile')}),
+        ('Professional Info', {'fields': ('experience_level', 'hourly_rate')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('name', 'email', 'password1', 'password2', 'phone_number', 'address', 'experience_level', 'hourly_rate', 'linkedin_profile')}
+        ),
+    )
+    ordering = ('email',)
 
-# Custom admin for Engineers
-class EngineerAdmin(AdminModelAdmin):
-    list_display = ('name', 'email', 'phone_number', 'job_title', 'availability_status', 'hourly_rate')
-    search_fields = ('name', 'email')
-    list_filter = ('availability_status', 'department')
+# Custom Admin for Group model
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+    filter_horizontal = ('users',)  # Allows for a better user-group relationship management
 
-class ProjectAdmin(AdminModelAdmin):
-    list_display = ('name', 'description', 'start_date', 'end_date', 'budget', 'status')
-    search_fields = ('name', 'description')
+# Custom Admin for Client model
+class ClientAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact_person', 'email', 'phone_number')
+    search_fields = ('name', 'contact_person', 'email', 'phone_number')
+    list_filter = ('name',)
+
+# Custom Admin for Project model
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('name', 'client', 'start_date', 'end_date', 'status', 'budget')
+    search_fields = ('name', 'client__name')
     list_filter = ('status', 'start_date', 'end_date')
+    ordering = ('start_date',)
 
-class AssignmentAdmin(AdminModelAdmin):
-    list_display = ('engineer', 'project', 'start_date', 'end_date', 'hours_worked', 'role_in_project')
-    search_fields = ('engineer__name', 'project__name')
+# Custom Admin for Leave model
+class LeaveAdmin(admin.ModelAdmin):
+    list_display = ('user', 'start_date', 'end_date')
+    search_fields = ('user__name', 'start_date')
     list_filter = ('start_date', 'end_date')
 
-class TimeEntryAdmin(AdminModelAdmin):
-    list_display = ('engineer', 'project', 'date', 'hours_worked', 'work_description')
-    search_fields = ('engineer__name', 'project__name', 'work_description')
-    list_filter = ('date',)
+# Custom Admin for TimeEntry model
+class TimeEntryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'project', 'start_date', 'end_date', 'hours_spent')
+    search_fields = ('user__name', 'project__name', 'start_date')
+    list_filter = ('start_date', 'end_date')
 
-class UserProfileAdmin(AdminModelAdmin):
-    list_display = ('user', 'role', 'associated_engineer')
-    search_fields = ('user__username', 'associated_engineer__name')
-    list_filter = ('role',)
-
-class ClientAdmin(AdminModelAdmin):
-    list_display = ('name', 'contact_person', 'email', 'phone_number')
-    search_fields = ('name', 'contact_person', 'email')
-
-class ReportAdmin(AdminModelAdmin):
-    list_display = ('name', 'report_type', 'generated_by', 'generated_on')
-    search_fields = ('name', 'report_type')
-    list_filter = ('report_type', 'generated_on')
-
-# Register models
-admin.site.register(Engineer, EngineerAdmin)
-admin.site.register(Project, ProjectAdmin)
-admin.site.register(Assignment, AssignmentAdmin)
-admin.site.register(TimeEntry, TimeEntryAdmin)
-admin.site.register(UserProfile, UserProfileAdmin)
+# Register models with custom admins
+admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(Group, GroupAdmin)
 admin.site.register(Client, ClientAdmin)
-admin.site.register(Report, ReportAdmin)
+admin.site.register(Project, ProjectAdmin)
+admin.site.register(Leave, LeaveAdmin)
+admin.site.register(TimeEntry, TimeEntryAdmin)

@@ -1,100 +1,48 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AbstractUser, Group, Permission
 
-# Engineer Model
-class Engineer(models.Model):
-    AVAILABILITY_CHOICES = [
-        ('Available', 'Available'),
-        ('Busy', 'Busy'),
-        ('On Leave', 'On Leave'),
-        ('On Project', 'On Project')
+# Custom User Model
+class CustomUser(AbstractUser):
+    EXPERIENCE_LEVEL_CHOICES = [
+        ('Junior', 'Junior'),
+        ('Mid', 'Mid'),
+        ('Senior', 'Senior'),
     ]
+
+    # Add related_name to resolve clashes
+    groups = models.ManyToManyField(Group, related_name='customuser_set', blank=True)
+    user_permissions = models.ManyToManyField(Permission, related_name='customuser_permissions', blank=True)
     
-    name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
+    # Additional fields here
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    job_title = models.CharField(max_length=100)
-    skillset = models.TextField()  # List of skills as a comma-separated string
-    experience_level = models.CharField(max_length=50)  # e.g., Junior, Mid, Senior
-    certifications = models.TextField(blank=True, null=True)  # Optional
-    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
-    availability_status = models.CharField(max_length=20, choices=AVAILABILITY_CHOICES, default='Available')
-    department = models.CharField(max_length=100, blank=True, null=True)  # Optional
-    linkedin_profile = models.URLField(blank=True, null=True)  # Optional
-    current_project = models.ForeignKey('Project', on_delete=models.SET_NULL, blank=True, null=True, related_name='current_engineers')
-    next_available_date = models.DateField(blank=True, null=True)
-
+    experience_level = models.CharField(max_length=10, choices=EXPERIENCE_LEVEL_CHOICES)
+    hourly_rate = models.DecimalField(max_digits=6, decimal_places=2)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    linkedin_profile = models.URLField(blank=True, null=True)
+    
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']  # Username and email are required for auth
+    
     def __str__(self):
-        return self.name
+        return self.name or self.username  # Return username if name is blank
 
-# Project Model
-class Project(models.Model):
-    STATUS_CHOICES = [
-        ('Planned', 'Planned'),
-        ('In Progress', 'In Progress'),
-        ('Completed', 'Completed')
-    ]
-
+# Groups (Custom user roles, which can be linked to permissions or handled differently)
+class Group(models.Model):
     name = models.CharField(max_length=100)
-    description = models.TextField()
-    start_date = models.DateField()
-    end_date = models.DateField(blank=True, null=True)
-    budget = models.DecimalField(max_digits=15, decimal_places=2)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Planned')
-    project_manager = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True)
-    client_name = models.CharField(max_length=100, blank=True, null=True)  # Optional
-
-    def total_cost(self):
-        total_hours = sum([assignment.hours_worked for assignment in self.assignments.all()])
-        return total_hours * self.engineers.first().hourly_rate  # Assuming a single engineer
+    users = models.ManyToManyField(CustomUser, related_name="user_groups")  # Avoiding conflict with CustomUser's groups
 
     def __str__(self):
         return self.name
 
-# Assignment Model
-class Assignment(models.Model):
-    engineer = models.ForeignKey(Engineer, on_delete=models.CASCADE, related_name='assignments')
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='assignments')
-    start_date = models.DateField()
-    end_date = models.DateField(blank=True, null=True)
-    hours_worked = models.DecimalField(max_digits=5, decimal_places=2)
-    role_in_project = models.CharField(max_length=100, blank=True, null=True)  # e.g., Developer, QA, Lead
-
-    def __str__(self):
-        return f"{self.engineer.name} on {self.project.name}"
-
-# Time Tracking Model (Optional)
-class TimeEntry(models.Model):
-    engineer = models.ForeignKey(Engineer, on_delete=models.CASCADE, related_name='time_entries')
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='time_entries')
-    date = models.DateField()
-    hours_worked = models.DecimalField(max_digits=5, decimal_places=2)
-    work_description = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.engineer.name} - {self.date} - {self.hours_worked} hours"
-
-# User Profile Model
-class UserProfile(models.Model):
-    ROLE_CHOICES = [
-        ('Admin', 'Admin'),
-        ('Manager', 'Manager'),
-        ('Engineer', 'Engineer')
-    ]
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    associated_engineer = models.OneToOneField(Engineer, on_delete=models.SET_NULL, blank=True, null=True, related_name='user_profile')
-
-    def __str__(self):
-        return self.user.username
-
-# Client Model (Optional)
+# Clients Model
 class Client(models.Model):
     name = models.CharField(max_length=100)
     contact_person = models.CharField(max_length=100)
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
@@ -102,20 +50,65 @@ class Client(models.Model):
     def __str__(self):
         return self.name
 
-# Reports and Analytics Model (Optional)
-class Report(models.Model):
-    REPORT_TYPE_CHOICES = [
-        ('Engineer Availability', 'Engineer Availability'),
-        ('Project Cost', 'Project Cost'),
-        ('Time Tracking', 'Time Tracking')
+# Projects Model
+class Project(models.Model):
+    STATUS_CHOICES = [
+        ('Planned', 'Planned'),
+        ('In Progress', 'In Progress'),
+        ('Completed', 'Completed'),
     ]
 
-    name = models.CharField(max_length=100)
-    report_type = models.CharField(max_length=50, choices=REPORT_TYPE_CHOICES)
-    filters_applied = models.JSONField()  # Storing filters as JSON
-    generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
-    generated_on = models.DateTimeField(auto_now_add=True)
-    report_data = models.JSONField()  # Actual report data
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    start_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
+    budget = models.DecimalField(max_digits=15, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Planned')
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, related_name='projects')
 
     def __str__(self):
         return self.name
+
+# Leaves Model
+class Leave(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='leaves')
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    def __str__(self):
+        return f"{self.user.name} - {self.start_date} to {self.end_date}"
+
+    # Ensure no overlapping leaves for the same user
+    def clean(self):
+        if Leave.objects.filter(user=self.user, start_date__lte=self.end_date, end_date__gte=self.start_date).exists():
+            raise ValidationError("There is already a leave within this period.")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'start_date', 'end_date'], name='unique_leave_period')
+        ]
+
+class TimeEntry(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='time_entries', null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='time_entries')
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(blank=True, null=True)
+    hours_spent = models.DecimalField(max_digits=5, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.user.name} worked {self.hours_spent} hours on {self.project.name}"
+
+    # Ensure the user is not on leave during time entry creation
+    def clean(self):
+        overlapping_leaves = Leave.objects.filter(
+            user=self.user,
+            start_date__lte=self.start_date,
+            end_date__gte=self.end_date or self.start_date
+        )
+        if overlapping_leaves.exists():
+            raise ValidationError("User is on leave during this period and cannot create time entries.")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'start_date', 'project'], name='unique_time_entry')
+        ]
